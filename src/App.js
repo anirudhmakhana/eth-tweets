@@ -159,7 +159,7 @@ export default function App() {
 
                 {!loading && (
                   <p>
-                    Wave at me!
+                    Tweet at me!
                   </p>
                 )}
               </button>
