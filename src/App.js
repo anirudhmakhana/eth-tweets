@@ -42,8 +42,12 @@ export default function App() {
   
   // State updated by listenersz`
   const [currentAccount, setCurrentAccount] = React.useState('');
-  const [allWaves, setAllWaves] = React.useState([]);
+  const [allTweets, sestAllTweets] = React.useState([]);
   const [loading, setLoading] = React.useState(false)
+
+  // Contract variables
+  const contractAddress = " 0x4278dba6Bc19D404c17fDfd8fCd41637Ca8E7184"
+  const contractABI = abi;
 
   // Initialize listeners and check if already connected to Metamask.
   React.useEffect(() => {
