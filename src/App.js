@@ -3,6 +3,39 @@ import { ethers } from "ethers";
 import { Spinner } from "./Component/Spinner";
 import './App.css';
 
+function TweetLogger({waver, timestamp, message}) {
+  return (
+    <div className="w-full border-2 border-purple-400 flex justify-between my-4">
+      <div className="flex flex-col p-4">
+        <p className="text-xl font-bold">
+          Tweeted By
+        </p>
+        <a className="text-lg text-blue-600 p-2" href={`https://rinkeby.etherscan.io/address/${waver}`} target="_blank" rel="noopener noreferrer">
+          {waver.slice(0,4) + "..." + waver.slice(-4)}
+        </a>
+      </div>
+
+      <div className="flex flex-col p-4">
+        <p className="text-xl font-bold max-w-md">
+          Tweeted at
+        </p>
+        <p className="text-lg p-2">
+          {`${new Date(timestamp * 1000)}`}
+        </p>
+      </div>
+
+      <div className="flex flex-col p-4 min-w-lg w-64">
+        <p className="text-xl font-bold">
+          Message
+        </p>
+        <p className="text-lg p-2">
+          {message.length > 20 ? message.slice(0, 20) + "..." : message}
+        </p>
+      </div>
+    </div>
+  )
+}
+
 export default function App() {
   // User input
   const [waveMessage, setWaveMessage] = React.useState("");
@@ -11,6 +44,71 @@ export default function App() {
   const [currentAccount, setCurrentAccount] = React.useState('');
   const [allWaves, setAllWaves] = React.useState([]);
   const [loading, setLoading] = React.useState(false)
+
+  // Initialize listeners and check if already connected to Metamask.
+  React.useEffect(() => {
+
+    if(typeof window.ethereum !== undefined) {
+
+      const { ethereum } = window;
+
+      const externalProvider = new ethers.providers.JsonRpcProvider(
+        `https://eth-rinkeby.alchemyapi.io/v2/${process.env.REACT_APP_ALCHEMY_KEY}`,
+        "rinkeby"
+      );
+      //const waveportalContract = new ethers.Contract(contractAddress, contractABI, externalProvider);
+      
+      // Check if already connected with metamask
+      ethereum.request({ method: 'eth_accounts' })
+        .then(accounts => {
+          if(!!accounts.length) {
+            const account = accounts[0];
+            setCurrentAccount(account);
+          }
+        })      
+
+      // Initialize listeners
+
+      ethereum.on("chainChanged", (chainId) => {
+        // Only Rinkeby
+        if(chainId != 4) {
+          alert("Please switch to the Rinkeby network to use the webapp.");
+        }
+      })
+
+      ethereum.on("accountsChanged", (accounts) => {
+
+        if(accounts.length == 0) {
+          setCurrentAccount('')
+        } else {
+          const account = accounts[0];
+          setCurrentAccount(account);
+        }        
+      })
+  
+    }
+
+  }, [])
+
+  // Connect to metamask
+  async function connectToMetamask() {
+    const { ethereum } = window;
+
+    if(!ethereum) {
+      alert("Please install Metamask to continue using the webapp.");
+    }
+
+    setLoading(true)
+
+    ethereum.request({ method: 'eth_requestAccounts' })
+      .then(accounts => {
+        console.log(accounts[0])
+        setLoading(false)
+      })
+      .catch(err => alert(
+        err.message
+      ));
+  }
 
 
   const waveButtonActive = !!currentAccount
@@ -30,7 +128,7 @@ export default function App() {
       <div className="m-auto">
         {!currentAccount
           ? (
-            <button onClick={""} className="font-sans border border-black p-4">
+            <button onClick={connectToMetamask} className="font-sans border border-black p-4">
               Connect to Metamask
             </button>
           )
@@ -40,8 +138,8 @@ export default function App() {
               <textarea
               placeholder="Enter your message here :)" 
               className="resize-none w-96 h-48 border-2 p-2 my-4" 
-              value={""} 
-              onChange={""}
+              value={waveMessage} 
+              onChange={e => setWaveMessage(e.target.value)}
 
               />
 
