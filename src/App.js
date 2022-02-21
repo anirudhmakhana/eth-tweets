@@ -3,6 +3,8 @@ import { ethers } from "ethers";
 import { Spinner } from "./Component/Spinner";
 import './App.css';
 
+import abi from "./utils/TwitterAccount.json"
+
 function TweetLogger({waver, timestamp, message}) {
   return (
     <div className="w-full border-2 border-purple-400 flex justify-between my-4">
@@ -40,14 +42,46 @@ export default function App() {
   // User input
   const [waveMessage, setWaveMessage] = React.useState("");
   
-  // State updated by listenersz`
+  // State updated by listeners
   const [currentAccount, setCurrentAccount] = React.useState('');
   const [allTweets, sestAllTweets] = React.useState([]);
   const [loading, setLoading] = React.useState(false)
 
   // Contract variables
-  const contractAddress = " 0x4278dba6Bc19D404c17fDfd8fCd41637Ca8E7184"
+  const contractAddress = " 0x633d1c17A8D17f0dCc67B285684e060056FB6027"
   const contractABI = abi;
+
+  async function getAllTweets() {
+
+    const externalProvider = new ethers.providers.JsonRpcProvider(
+      `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_KEY_PRIVATE_ID}`,
+      "rinkeby"
+    );
+    const twitterAccountContract = new ethers.Contract(contractAddress, contractABI, externalProvider);
+    
+
+    const filter = twitterAccountContract.filters.NewTweet()
+    const startBlock = 10186022; // Contract creation block.
+    const endBlock = await externalProvider.getBlockNumber();
+    
+    console.log("hello", endBlock)
+
+    const queryResult = await twitterAccountContract.queryFilter(filter, startBlock, endBlock);
+    
+    const tweetsUptilNow = queryResult.map(matchedEvent => {
+      return (
+        {
+          waver: matchedEvent.args[0],
+          timestamp: matchedEvent.args[1],
+          message: matchedEvent.args[2]
+        }
+      )        
+    })
+
+    console.log(queryResult)
+
+    sestAllTweets(tweetsUptilNow.reverse())
+  }
 
   // Initialize listeners and check if already connected to Metamask.
   React.useEffect(() => {
