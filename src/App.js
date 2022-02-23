@@ -44,24 +44,32 @@ export default function App() {
   
   // State updated by listeners
   const [currentAccount, setCurrentAccount] = React.useState('');
-  const [allTweets, sestAllTweets] = React.useState([]);
+  const [allTweets, setAllTweets] = React.useState([]);
   const [loading, setLoading] = React.useState(false)
 
   // Contract variables
-  const contractAddress = " 0x633d1c17A8D17f0dCc67B285684e060056FB6027"
+  const contractAddress = "0xD7304bFf3d23c86B372B98c5a009d669001f10f2"
   const contractABI = abi;
 
   async function getAllTweets() {
 
     const externalProvider = new ethers.providers.JsonRpcProvider(
-      `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_KEY_PRIVATE_ID}`,
+      `https://rinkeby.infura.io/v3/${process.env.INFURA_KEY_PRIVATE_ID}`,
       "rinkeby"
     );
-    const twitterAccountContract = new ethers.Contract(contractAddress, contractABI, externalProvider);
+    const twitterAccountContract = new ethers.Contract(contractAddress, contractABI.abi, externalProvider);
     
 
-    const filter = twitterAccountContract.filters.NewTweet()
-    const startBlock = 10186022; // Contract creation block.
+    const filter = twitterAccountContract.on("NewTweet", (from, timestamp, message) => {
+      return (
+        {
+          from : from,
+          timestamp: timestamp,
+          messsage: message
+        }
+      )
+    });
+    const startBlock = 10212807; // Contract creation block.
     const endBlock = await externalProvider.getBlockNumber();
     
     console.log("hello", endBlock)
@@ -80,8 +88,12 @@ export default function App() {
 
     console.log(queryResult)
 
-    sestAllTweets(tweetsUptilNow.reverse())
+    setAllTweets(tweetsUptilNow.reverse())
   }
+    // Get data about all waves that have come before.
+    React.useEffect(() => {
+      getAllTweets()
+    }, [])
 
   // Initialize listeners and check if already connected to Metamask.
   React.useEffect(() => {
@@ -91,10 +103,11 @@ export default function App() {
       const { ethereum } = window;
 
       const externalProvider = new ethers.providers.JsonRpcProvider(
-        `https://eth-rinkeby.alchemyapi.io/v2/${process.env.REACT_APP_ALCHEMY_KEY}`,
+        `https://rinkeby.infura.io/v3/${process.env.INFURA_KEY_PRIVATE_ID}`,
         "rinkeby"
       );
-      //const waveportalContract = new ethers.Contract(contractAddress, contractABI, externalProvider);
+      const twitterAccountContract = new ethers.Contract(contractAddress, contractABI.abi, externalProvider);
+      //console.log(twitterAccountContract)
       
       // Check if already connected with metamask
       ethereum.request({ method: 'eth_accounts' })
@@ -123,6 +136,11 @@ export default function App() {
           setCurrentAccount(account);
         }        
       })
+
+      
+      // twitterAccountContract.on("NewTweet", (waver, timestamp, message) => {
+      //   setAllTweets([{waver, timestamp, message}, ...allTweets]);
+      // })
   
     }
 
