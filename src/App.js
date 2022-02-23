@@ -54,14 +54,14 @@ export default function App() {
   async function getAllTweets() {
 
     const externalProvider = new ethers.providers.JsonRpcProvider(
-      `https://rinkeby.infura.io/v3/${process.env.INFURA_KEY_PRIVATE_ID}`,
+      `https://rinkeby.infura.io/v3/6c9af8d40e4d4ff0bad46e193bc1aa8b`,
       "rinkeby"
     );
     const twitterAccountContract = new ethers.Contract(contractAddress, contractABI.abi, externalProvider);
     
 
     const filter = twitterAccountContract.on("NewTweet", (from, timestamp, message) => {
-      return (
+      console.log (
         {
           from : from,
           timestamp: timestamp,
@@ -103,7 +103,7 @@ export default function App() {
       const { ethereum } = window;
 
       const externalProvider = new ethers.providers.JsonRpcProvider(
-        `https://rinkeby.infura.io/v3/${process.env.INFURA_KEY_PRIVATE_ID}`,
+        `https://rinkeby.infura.io/v3/6c9af8d40e4d4ff0bad46e193bc1aa8b`,
         "rinkeby"
       );
       const twitterAccountContract = new ethers.Contract(contractAddress, contractABI.abi, externalProvider);
@@ -138,9 +138,9 @@ export default function App() {
       })
 
       
-      // twitterAccountContract.on("NewTweet", (waver, timestamp, message) => {
-      //   setAllTweets([{waver, timestamp, message}, ...allTweets]);
-      // })
+      twitterAccountContract.on("NewTweet", (waver, timestamp, message) => {
+        setAllTweets([{waver, timestamp, message}, ...allTweets]);
+      })
   
     }
 
@@ -164,6 +164,32 @@ export default function App() {
       .catch(err => alert(
         err.message
       ));
+  }
+
+  async function sendTweet() {
+    if(typeof window.ethereum !== undefined) {
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer = provider.getSigner()
+      const twitterAccountContract = new ethers.Contract(contractAddress, contractABI.abi, signer);
+
+      setLoading(true);
+
+      try {
+
+        const tx = await twitterAccountContract.tweetAtMe(waveMessage, { gasLimit: 100000 })
+        alert(`You can view your transaction at https://rinkeby.etherscan.io/tx/${tx.hash}`)
+
+        await tx.wait()
+
+        setWaveMessage("")
+
+      } catch(err) {
+        alert(err.message)
+      }
+
+      setLoading(false)
+    }
   }
 
 
@@ -202,7 +228,7 @@ export default function App() {
               <button
                 disabled={!waveButtonActive}
                 className={`p-2 border ${!waveButtonActive ? "border-gray-300 text-gray-300" : "border-black"}`}
-                onClick={""}
+                onClick={sendTweet}
               >
                 {loading && (
                   <div className="m-auto flex justify-center">
@@ -231,9 +257,9 @@ export default function App() {
         <p className="font-sans center">
           {"Check out all these people out here waving!"}
         </p>
-
+        {allTweets.map(({waver, timestamp, message}) => <TweetLogger key={timestamp} waver={waver} timestamp={timestamp} message={message}/>)}
+        </div>
       </div>
     </div>
-  </div>
   )
 }
